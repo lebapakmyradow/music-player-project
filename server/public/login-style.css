@@ -1,0 +1,16 @@
+.center {
+    margin: auto;
+    width: 80%;
+    border: 3px solid green;
+    padding: 10px;
+
+}
+
+#right{
+    
+    float: right;
+}
+
+#flex-container{
+    display: flex;
+}
