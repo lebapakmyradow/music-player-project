@@ -1,21 +1,29 @@
 const express = require('express');
-const app = express();
-const router = require("../server/router/route");
+const router = require('./routes/router');
+const songRouter = require('./routes/song');
 
+const cors = require('cors');
+const path = require('path');
+const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
 app.use(express.json());
 
-app.use(express.urlencoded({extended:true}));
-
-app.use(function(req, res, next){
-    console.log(req.url, req.body);
-    next();
-})
-
-app.use("/public", express.static("public"))
-app.use("", router);
+app.use('/login', router);
+app.use('/songs', songRouter);
+app.use('/logout', router);
+app.use('/addSong', router);
+app.use('/removeSong', router);
+app.use('/search', router);
 
 app.use((req, res, next) => {
-    res.end("page not found");
-    //next();
+    res.status(404).json({ error: req.url + ' API not supported!' });
 });
-app.listen(3000, () => {console.log("listening 3000..")});
+
+app.use((err, req, res, next) => {
+    if (err.message === 'NOT Found')
+        res.status(404).json({ error: err.message });
+    else res.status(500).json({ error: 'Something went wrong! Try again later' });
+});
+
+app.listen(3000, () => console.log('listening to 3000...'));

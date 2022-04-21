@@ -1,0 +1,289 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Homepage</title>
+    <link href="style.css" rel="stylesheet" />
+    <script>
+        //dynamically creates tables of suggested playlist, user playlist and search as playlist
+        window.onload = function () {
+            let xmlReq = new XMLHttpRequest();
+            xmlReq.open("POST", 'http://localhost:3000/songs', true);
+            xmlReq.setRequestHeader('Content-Type', 'application/json');
+            xmlReq.onload = function () {
+                if (JSON.parse(this.responseText).result) {
+                    document.getElementById('user').innerHTML = JSON.parse(sessionStorage.getItem('login')).user;
+
+                    let suggestedSongs = JSON.parse(this.responseText).data.interest;
+
+                    let suggestSongTableStr = '<table><h2>Songs That May Interest You</h2><tr><td><strong>Id</strong></td><td><strong>Title</strong></td><td><strong>Release Date</strong></td><td><strong>Actions</strong></td></tr>';
+
+                    for (let i = 0; i < suggestedSongs.length; i++) {
+                        suggestSongTableStr += '<tr><td>' + suggestedSongs[i].id + '</td>';
+                        suggestSongTableStr += '<td>' + suggestedSongs[i].title + '</td>';
+                        suggestSongTableStr += '<td>' + suggestedSongs[i].releaseDate + '</td>';
+                        suggestSongTableStr += '<td onclick="addSong(' + suggestedSongs[i].id + ')"><button><h5>Add To Playlist</h5></button></td>';
+                        suggestSongTableStr += '</tr>';
+                    }
+                    suggestSongTableStr += '</table>';
+                    document.getElementById('interest').innerHTML = suggestSongTableStr;
+
+                    let userPlaylist = JSON.parse(this.responseText).data.playlist;
+                    if (userPlaylist.length == 0) {
+                        document.getElementById('playlist').innerHTML = '<h2>No Songs In Your Playlist</h2>';
+                    }
+                    else {
+                        let playlistTableStr = '<table id="table"><h2>Your Playlist</h2>';
+                        for (let i = 0; i < userPlaylist.length; i++) {
+                            playlistTableStr += '<tr id=p' + userPlaylist[i].id + '>';
+                            playlistTableStr += '<td>' + userPlaylist[i].title + '</td>';
+                            playlistTableStr += '<td>' + userPlaylist[i].releaseDate + '</td>';
+                            playlistTableStr += '<td>' + '<audio controls><source id="s' + i + '" src="http://localhost:3000/songs/' + userPlaylist[i].id + '.mp3" type="audio/mpeg"></audio>' + '</td>';
+                            playlistTableStr += '<td onclick="playSong(' + userPlaylist[i].id + ',\'' + userPlaylist[i].title + '\')"><button><h5>Play</h5></button></td>';
+                            playlistTableStr += '<td onclick="removeSong(' + userPlaylist[i].id + ')"><button><h5>Remove</h5></button></td>';
+                            playlistTableStr += '</tr>';
+                        }
+                        playlistTableStr += '</table>';
+                        document.getElementById('playlist').innerHTML = playlistTableStr;
+                    }
+                }
+                else location.href = 'login.html';
+            };
+            if (sessionStorage.getItem('login') != null)
+                xmlReq.send(JSON.stringify(
+                    {
+                        user: JSON.parse(sessionStorage.getItem('login')).user,
+                        token: JSON.parse(sessionStorage.getItem('login')).token
+                    }));
+            else location.href = 'login.html';
+
+            document.getElementById('logout').onclick = function () {
+                let xmlReq = new XMLHttpRequest();
+                xmlReq.open("POST", 'http://localhost:3000/logout/loggingOut', true);
+                xmlReq.setRequestHeader('Content-Type', 'application/json');
+                xmlReq.onload = function () {
+                    if (JSON.parse(this.responseText).result) {
+                        sessionStorage.removeItem('login');
+                        alert(JSON.parse(this.responseText).message);
+                        location.href = 'login.html';
+                    }
+                };
+                if (sessionStorage.getItem('login') != null)
+                    xmlReq.send(JSON.stringify(
+                        {
+                            user: JSON.parse(sessionStorage.getItem('login')).user,
+                            token: JSON.parse(sessionStorage.getItem('login')).token
+                        }));
+                else location.href = 'login.html';
+            }
+        }
+
+        //searches the in memory songs for keyword and returns result as dynamic table
+        //returns all songs if keyword not passed
+        function search() {
+            let xmlReq = new XMLHttpRequest();
+            xmlReq.open("POST", 'http://localhost:3000/search/searchingSong', true);
+            xmlReq.setRequestHeader('Content-Type', 'application/json');
+            xmlReq.onload = function () {
+                if (JSON.parse(this.responseText).result) {
+                    let searchResults = JSON.parse(this.responseText).data;
+                    let searchResultTableStr = '<table><h2>Search Result:</h2><tr><td><strong>Id</strong></td><td><strong>Title</strong></td><td><strong>Release Date</strong></td><td><strong>Actions</strong></td></tr>';
+
+                    for (let i = 0; i < searchResults.length; i++) {
+                        searchResultTableStr += '<tr><td>' + searchResults[i].id + '</td>';
+                        searchResultTableStr += '<td>' + searchResults[i].title + '</td>';
+                        searchResultTableStr += '<td>' + searchResults[i].releaseDate + '</td>';
+                        searchResultTableStr += '<td onclick="addSong(' + searchResults[i].id + ')"><button><h5>Add To Playlist</h5></button></td>';
+                        searchResultTableStr += '</tr>';
+                    }
+                    searchResultTableStr += '</table>';
+                    document.getElementById('search').innerHTML = searchResultTableStr;
+
+                }
+            };
+            if (sessionStorage.getItem('login') != null)
+                xmlReq.send(JSON.stringify(
+                    {
+                        user: JSON.parse(sessionStorage.getItem('login')).user,
+                        word: document.getElementById('txtSearch').value
+                    }));
+            else location.href = 'login.html';
+        }
+
+        //
+        function addSong(song) {
+            let xmlReq = new XMLHttpRequest();
+            xmlReq.open("POST", 'http://localhost:3000/addSong/addingSong', true);
+            xmlReq.setRequestHeader('Content-Type', 'application/json');
+            xmlReq.onload = function () {
+                if (JSON.parse(this.responseText).result) {
+                    //if (JSON.parse(this.responseText).result)
+                    alert(JSON.parse(this.responseText).message);
+                    location.reload();
+                }
+            };
+            if (sessionStorage.getItem('login') != null)
+                xmlReq.send(JSON.stringify(
+                    {
+                        user: JSON.parse(sessionStorage.getItem('login')).user,
+                        songId: song
+                    }));
+            else location.href = 'login.html';
+        }
+
+        //
+        function removeSong(song) {
+            let xmlReq = new XMLHttpRequest();
+            xmlReq.open("POST", 'http://localhost:3000/removeSong/removingSong', true);
+            xmlReq.setRequestHeader('Content-Type', 'application/json');
+            xmlReq.onload = function () {
+                if (JSON.parse(this.responseText).result) {
+                    //if (JSON.parse(this.responseText).result)
+                    alert(JSON.parse(this.responseText).message);
+                    location.reload();
+                }
+            };
+            if (sessionStorage.getItem('login') != null)
+                xmlReq.send(JSON.stringify(
+                    {
+                        user: JSON.parse(sessionStorage.getItem('login')).user,
+                        songId: song
+                    }));
+            else location.href = 'login.html';
+        }
+
+        //plays the songs, used withing table player
+        function playSong(song, title) {
+            if (currentAudio != null) {
+                currentAudio.pause();
+            }
+            currentAudio = new Audio('http://localhost:3000/songs/' + song + '.mp3');
+            currentAudio.onloadedmetadata = function () {
+            document.getElementById('duration').innerHTML = currentAudio.duration;
+
+            setInterval(function () {
+                    if (currentAudio != null) {
+                        document.getElementById('currentTime').innerHTML = currentAudio.currentTime;
+                        document.getElementById('left').style.width = (1000 * (currentAudio.currentTime / currentAudio.duration)) + 'px';
+                        document.getElementById('right').style.left = (1000 * (currentAudio.currentTime / currentAudio.duration)) + 'px';
+                    }
+                }, 666);
+            };
+            currentAudio.onended = function () { setPlayOrder(title); }
+            currentAudio.play();
+            document.getElementById('title').innerHTML = title;
+
+        }
+        function setPlayOrder(title) {
+            if (document.getElementById('repeat').checked)
+                currentAudio.play();
+            else if (document.getElementById('cycle').checked)
+                playNextSong();
+            else if (document.getElementById('shuffle').checked) {
+                var index = Math.floor(Math.random() * document.getElementById('table').rows.length);
+        
+                document.getElementById('table').rows[currentIndex = index % document.getElementById('table').rows.length].cells[3].click();
+            }
+        }
+
+        //this function checks radioInput and sets from DOM
+        function setRadios(radioInput) {
+            switch (radioInput) {
+                case 'c':
+                    document.getElementById('shuffle').checked = false;
+                    document.getElementById('cycle').checked = true;
+                    document.getElementById('repeat').checked = false;
+                    break;
+                case 's':
+                    document.getElementById('shuffle').checked = true;
+                    document.getElementById('cycle').checked = false;
+                    document.getElementById('repeat').checked = false;
+                    break;
+                case 'r':
+                    document.getElementById('shuffle').checked = false;
+                    document.getElementById('cycle').checked = false;
+                    document.getElementById('repeat').checked = true;
+                    break;
+            }
+        }
+        //play the current song with the initial index
+        let currentAudio = null;
+        function playClick() {
+            if (currentAudio != null) {
+                currentAudio.play();
+            }
+            else document.getElementById('table').rows[currentIndex % document.getElementById('table').rows.length].cells[3].click();
+        }
+
+        //this function runs once next button onclick, if playlist is repeat, it just plays current song,
+        //else if its cycle, it plays the next song in the playlist in order, logic index%length is used  
+        //else if its shuffle, generate random number and play that song
+        let currentIndex = 0;
+        function playNextSong() {
+            if (document.getElementById('repeat').checked) {
+                currentAudio.play();
+            }
+            else if (document.getElementById('cycle').checked) {
+                document.getElementById('table').rows[++currentIndex % document.getElementById('table').rows.length].cells[3].click();
+            }
+            else if (document.getElementById('shuffle').checked) {
+                let index = Math.floor(Math.random() * document.getElementById('table').rows.length);
+                document.getElementById('table').rows[currentIndex = index % document.getElementById('table').rows.length].cells[3].click();
+            }
+        }
+
+        //same as playNextSong function
+        function playPrevSong() {
+            if (currentIndex < 1) currentIndex = document.getElementById('table').rows.length;
+            if (document.getElementById('repeat').checked) {
+                currentAudio.play();
+            }
+            else if (document.getElementById('cycle').checked) {
+                document.getElementById('table').rows[--currentIndex % document.getElementById('table').rows.length].cells[3].click();
+            }
+            else if (document.getElementById('shuffle').checked) {
+                let index = Math.floor(Math.random() * document.getElementById('table').rows.length);
+                document.getElementById('table').rows[currentIndex = index % document.getElementById('table').rows.length].cells[3].click();
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div class="topnav">
+        <a class="logo">Lá Music</a>
+        <span id="user" hidden></span>
+        <div class="search-container">
+            <input id="txtSearch" type="text" placeholder="Search..">
+            <button id="logout">Log out</button>
+            <button id="btnSearch" onclick="search()" type="submit">Search</button>
+        </div>
+    </div>
+    <div id="search"></div><br /><br />
+    <div id="interest"> </div><br /><br />
+    <div id="playlist"></div><br /><br />
+
+    <div id="playback" class="center">
+        <div id="title"></div>
+        <span id="currentTime"></span> / <span id="duration"></span>
+        <div id="progress" style="border: solid; margin: auto; width: 1000px; height: 20px">
+            <div id="left" style=" position:absolute; width:0px;height:14px;background-color:orange"></div>
+            <div id="right" style="position: absolute; left:100px; width: 0px; height: 20px; background-color: rgb(212, 84, 84)"> </div>
+        </div>
+        <br>
+
+        <input type="radio" value="Cycle" id="cycle" onclick="setRadios('c')" title="Cycle">Repeat All</input>
+        <input type="radio" value="Shuffle" id="shuffle" onclick="setRadios('s')" title="Shuffle">Shuffle </input>
+        <input type="radio" value="Repeat" id="repeat" onclick="setRadios('r')" title="Repeat">Repeat Song </input>
+
+        <br><br>
+        <button class="playlist"><img src="prev-button.png" onclick="playPrevSong()" /></button>
+        <button onclick="playClick()"><img src="play-button.png" /></button>
+        <button onclick="currentAudio.pause()"><img src="pause-button.png" /></button>
+        <button onclick="playNextSong()"><img src="next-button.png" /></button>
+        <br>
+    </div><br /><br />
+</body>
+</html>
